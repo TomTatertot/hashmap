@@ -1,0 +1,24 @@
+{
+  "name": "hashmap",
+  "version": "1.0.0",
+  "description": "",
+  "main": "hashmap.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TomTatertot/hashmap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/TomTatertot/hashmap/issues"
+  },
+  "homepage": "https://github.com/TomTatertot/hashmap#readme",
+  "dependencies": {
+    "node": "^25.7.0"
+  }
+}
