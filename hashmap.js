@@ -185,10 +185,10 @@ class Node {
 }
 
 class HashMap {
-  hashTable = [];
   constructor(loadFactor = 0.75, capacity = 16) {
     this.loadFactor = loadFactor;
     this.capacity = capacity;
+    this.hashTable = new Array(capacity);
   }
 
   hash(key) {
@@ -233,17 +233,77 @@ class HashMap {
   get(key) {
     const hashCode = this.hash(key);
     const bucket = hashTable[hashCode];
-    
-    if (!bucket)
-      return null;
+
+    if (!bucket) return null;
 
     let currNode = bucket.listHead;
-    while(currNode !== null){
+    while (currNode !== null) {
       let data = currNode.value;
-      if(data.key === key)
-        return data.value;
+      if (data.key === key) return data.value;
       currNode = currNode.nextNode;
     }
+  }
+
+  has(key) {
+    const hashCode = this.hash(key);
+    const bucket = hashTable[hashCode];
+
+    if (!bucket) return false;
+
+    let currNode = bucket.listHead;
+    while (currNode !== null) {
+      let data = currNode.value;
+      if (data.key === key) {
+        return true;
+      }
+      currNode = currNode.nextNode;
+    }
+
+    return false;
+  }
+  remove(key) {
+    const hashCode = this.hash(key);
+    const bucket = hashTable[hashCode];
+
+    if (!bucket) return false;
+
+    if (bucket.listHead.nextNode === null) {
+      bucket.listHead = null;
+      return;
+    }
+
+    let currNode = bucket.listHead;
+    let currNodeTail = bucket.listHead;
+    //check if currNode is already
+    while (currNode !== null) {
+      let data = currNode.value;
+      if (data.key === key) {
+        currNodeTail = currNode.nextNode;
+        return true;
+      }
+      currNodeTail = currNode;
+      currNode = currNode.nextNode;
+    }
+
+    return false;
+  }
+
+  length() {
+    let length = 0;
+    this.hashTable.forEach((bucket) => {
+      let currNode = bucket.listHead;
+      while (currNode !== null) {
+        length++;
+        currNode = currNode.nextNode;
+      }
+    });
+    return length;
+  }
+
+  clear(){
+    this.hashTable.forEach((bucket) => {
+      bucket.listHead = null;
+    });
   }
 }
 
@@ -264,12 +324,22 @@ test.set('ice cream', 'white');
 test.set('jacket', 'blue');
 test.set('kite', 'pink');
 test.set('lion', 'golden');
+test.set('kite', 'blue');
 
 const hashTable = test.hashTable;
 hashTable.forEach((bucket) => {
-  console.log(bucket.toString((nodeObj) => {
-    return `[${nodeObj.key}, ${nodeObj.value} ]`
-  }));
+  console.log(
+    bucket.toString((nodeObj) => {
+      return `[${nodeObj.key}, ${nodeObj.value} ]`;
+    }),
+  );
 });
 
-console.log(test.get('grape'));
+console.log(test.get('kite'));
+console.log(test.has('lion'));
+console.log(test.length());
+test.clear();
+
+console.log(test.hashTable);
+console.log(test.length());
+
