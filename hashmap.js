@@ -1,194 +1,15 @@
-class LinkedList {
-  constructor() {
-    this.listHead = null;
-  }
-
-  append(value) {
-    if (!this.listHead) {
-      this.listHead = new Node(value);
-      return;
-    }
-
-    let currNode = this.listHead;
-    while (currNode.nextNode !== null) {
-      currNode = currNode.nextNode;
-    }
-    currNode.nextNode = new Node(value);
-  }
-
-  prepend(value) {
-    if (!this.listHead) {
-      this.listHead = new Node(value);
-      return;
-    }
-
-    const newNode = new Node(value);
-    newNode.nextNode = this.listHead;
-    this.listHead = newNode;
-  }
-
-  size() {
-    let size = 0;
-    let currNode = this.listHead;
-    while (currNode) {
-      size++;
-      currNode = currNode.nextNode;
-    }
-
-    return size;
-  }
-
-  at(index) {
-    let currIndex = 0;
-    let currNode = this.listHead;
-    while (currNode) {
-      if (currIndex === index) return currNode.value;
-      currIndex++;
-      currNode = currNode.nextNode;
-    }
-  }
-
-  nodeAt(index) {
-    let currIndex = 0;
-    let currNode = this.listHead;
-    while (currNode) {
-      if (currIndex === index) return currNode;
-      currIndex++;
-      currNode = currNode.nextNode;
-    }
-    return null;
-  }
-
-  pop() {
-    if (!this.listHead) return;
-
-    const headValue = this.listHead.value;
-    this.listHead = this.listHead.nextNode;
-    return headValue;
-  }
-
-  contains(value) {
-    let currNode = this.listHead;
-    while (currNode) {
-      if (currNode.value === value) return true;
-      currNode = currNode.nextNode;
-    }
-    return false;
-  }
-
-  findIndex(value) {
-    let currNode = this.listHead;
-    let currIndex = 0;
-    while (currNode) {
-      if (currNode.value === value) return currIndex;
-      currNode = currNode.nextNode;
-      currIndex++;
-    }
-
-    return -1;
-  }
-
-  update(index, value) {
-    const node = nodeAt(index);
-    if (!node) return;
-    node.value = value;
-  }
-
-  insertAt(index, ...values) {
-    if (index < 0 || values.length < 0) return;
-
-    let currIndex = 0;
-    let nodeBeforeIndex = this.listHead;
-    let nodeAtIndex = this.listHead;
-
-    while (currIndex !== index) {
-      //if node is out of bounds
-      if (nodeAtIndex === null) throw new RangeError('Index out of bounds');
-      currIndex++;
-      nodeBeforeIndex = nodeAtIndex;
-      nodeAtIndex = nodeAtIndex.nextNode;
-    }
-
-    let currInsertNode = new Node(values[0]);
-    if (index === 0) {
-      this.listHead = currInsertNode;
-    } else {
-      nodeBeforeIndex.nextNode = currInsertNode;
-    }
-    for (let i = 1; i < values.length; i++) {
-      currInsertNode.nextNode = new Node(values[i]);
-      currInsertNode = currInsertNode.nextNode;
-    }
-
-    currInsertNode.nextNode = nodeAtIndex;
-
-    return;
-  }
-
-  removeAt(index) {
-    if (!this.nodeAt(index)) throw new RangeError('Index out of bounds');
-
-    if (index === 0) {
-      this.listHead = this.listHead.nextNode;
-      return;
-    }
-
-    let currIndex = 1;
-    let beforeNodeAtIndex = this.listHead;
-    let nodeAtIndex = this.listHead.nextNode;
-    while (currIndex !== index) {
-      currIndex++;
-      beforeNodeAtIndex = beforeNodeAtIndex.nextNode;
-      nodeAtIndex = nodeAtIndex.nextNode;
-    }
-    beforeNodeAtIndex.nextNode = nodeAtIndex.nextNode;
-  }
-
-  get head() {
-    if (this.listHead === null) return;
-
-    return this.listHead.value;
-  }
-
-  get tail() {
-    if (!this.listHead) return;
-
-    let currNode = this.listHead;
-    while (currNode.nextNode !== null) {
-      currNode = currNode.nextNode;
-    }
-
-    return currNode.value;
-  }
-
-  toString(formatFn) {
-    if (!this.listHead) return ' ';
-
-    let result = '';
-    let currNode = this.listHead;
-
-    while (currNode !== null) {
-      if (formatFn) result += `(${formatFn(currNode.value)}) -> `;
-      else result += `( ${currNode.value} ) -> `;
-      currNode = currNode.nextNode;
-    }
-    result += 'null';
-    return result;
-  }
-}
-
-class Node {
-  constructor(value = null, nextNode = null) {
-    this.value = value;
-    this.nextNode = nextNode;
-  }
-}
+import { LinkedList } from "./linked-list.js";
+import { Node } from "./node.js";
 
 class HashMap {
-  constructor(loadFactor = 0.75, capacity = 16) {
-    this.loadFactor = loadFactor;
-    this.capacity = capacity;
-    this.hashTable = new Array(capacity);
+  constructor() {
+    this.loadFactor = 0.75;
+    this.capacity = 16;
+    this.hashTable = new Array(this.capacity).fill(null);
+    this.size = 0;
+    //I include a size property because everytime a key is inserted, size must be compared to (capacity * loadFactor)
+    //without the size property, set() would need to iterate through the entire hashTable to find all the entries,
+    //which causes insert to have a time complexity of O(n) instead of O(1).
   }
 
   hash(key) {
@@ -205,34 +26,41 @@ class HashMap {
 
   set(key, value) {
     let hashCode = this.hash(key);
-    let list = this.hashTable[hashCode];
+    let bucket = this.hashTable[hashCode];
     //If the bucket is empty, assign it to a new linked list.
-    if (!list) {
-      list = new LinkedList();
-      list.append({ key: key, value: value });
-      this.hashTable[hashCode] = list;
+    if (!bucket) {
+      bucket = new LinkedList();
+      bucket.append({ key: key, value: value });
+      this.hashTable[hashCode] = bucket;
+      this.size++;
+      if (this.size > this.capacity * this.loadFactor) this.expandHashTable();
       return;
       // console.log(list);
     }
 
     //Check if the key already exists in the linked list.
-    let currNode = list.listHead;
+    let currNode = bucket.listHead;
     let nodeData = currNode.value;
     while (currNode.nextNode !== null && nodeData.key !== key) {
       currNode = currNode.nextNode;
+      nodeData = currNode.value;
     }
+    //If key already exists, replace its value.
     if (nodeData.key === key) {
       nodeData.value = value;
     } else {
       //If not, add it to the end of the list
       const newData = { key: key, value: value };
       currNode.nextNode = new Node(newData);
+      this.size += 1;
+      //Check if the hashTable is over capacity.
+      if (this.size > this.capacity * this.loadFactor) this.expandHashTable();
     }
   }
 
   get(key) {
     const hashCode = this.hash(key);
-    const bucket = hashTable[hashCode];
+    const bucket = this.hashTable[hashCode];
 
     if (!bucket) return null;
 
@@ -246,7 +74,7 @@ class HashMap {
 
   has(key) {
     const hashCode = this.hash(key);
-    const bucket = hashTable[hashCode];
+    const bucket = this.hashTable[hashCode];
 
     if (!bucket) return false;
 
@@ -263,13 +91,20 @@ class HashMap {
   }
   remove(key) {
     const hashCode = this.hash(key);
-    const bucket = hashTable[hashCode];
+    const bucket = this.hashTable[hashCode];
 
     if (!bucket) return false;
 
     if (bucket.listHead.nextNode === null) {
-      bucket.listHead = null;
-      return;
+      this.size--;
+      this.hashTable[hashCode] = null;
+      return true;
+    }
+
+    if (bucket.listHead.value.key === key) {
+      bucket.listHead = bucket.listHead.nextNode;
+      this.size--;
+      return true;
     }
 
     let currNode = bucket.listHead;
@@ -278,7 +113,8 @@ class HashMap {
     while (currNode !== null) {
       let data = currNode.value;
       if (data.key === key) {
-        currNodeTail = currNode.nextNode;
+        currNodeTail.nextNode = currNode.nextNode;
+        this.size--;
         return true;
       }
       currNodeTail = currNode;
@@ -289,57 +125,77 @@ class HashMap {
   }
 
   length() {
-    let length = 0;
+    return this.size;
+  }
+
+  clear() {
+    this.capacity = 16;
+    this.hashTable = new Array(this.capacity).fill(null);
+    this.size = 0;
+  }
+
+  keys() {
+    let keysArray = [];
     this.hashTable.forEach((bucket) => {
+      if (!bucket)
+        return;
       let currNode = bucket.listHead;
       while (currNode !== null) {
-        length++;
+        const data = currNode.value;
+        keysArray.push(data.key);
         currNode = currNode.nextNode;
       }
     });
-    return length;
+
+    return keysArray;
   }
 
-  clear(){
+  values() {
+    let valuesArray = [];
     this.hashTable.forEach((bucket) => {
-      bucket.listHead = null;
+      if (!bucket)
+        return;
+      let currNode = bucket.listHead;
+      while (currNode !== null) {
+        const data = currNode.value;
+        valuesArray.push(data.value);
+        currNode = currNode.nextNode;
+      }
     });
+
+    return valuesArray;
+  }
+
+  entries() {
+    let entriesArray = [];
+    this.hashTable.forEach((bucket) => {
+      if (!bucket)
+        return;
+      let currNode = bucket.listHead;
+      while (currNode !== null) {
+        const data = currNode.value;
+        entriesArray.push([data.key, data.value]);
+        currNode = currNode.nextNode;
+      }
+    });
+
+    return entriesArray;
+  }
+
+  expandHashTable() {
+    //create a new array that is double its capacity,
+    this.capacity = this.capacity * 2;
+    const newHashTable = new Array(this.capacity);
+    //then re-hash all keys and place into the new array
+    this.hashTable.forEach((bucket) => {
+      if (!bucket)
+        return;
+      const data = bucket.listHead.value;
+      const newHashCode = this.hash(data.key);
+      newHashTable[newHashCode] = bucket;
+    });
+    this.hashTable = newHashTable;
   }
 }
 
-const test = new HashMap();
-// console.log(test.hash("apple"));
-// map.set('apple', 'red');
-// map.set('apple', 'blue');
-// map.set('blueberry', 'blue');
-test.set('apple', 'red');
-test.set('banana', 'yellow');
-test.set('carrot', 'orange');
-test.set('dog', 'brown');
-test.set('elephant', 'gray');
-test.set('frog', 'green');
-test.set('grape', 'purple');
-test.set('hat', 'black');
-test.set('ice cream', 'white');
-test.set('jacket', 'blue');
-test.set('kite', 'pink');
-test.set('lion', 'golden');
-test.set('kite', 'blue');
-
-const hashTable = test.hashTable;
-hashTable.forEach((bucket) => {
-  console.log(
-    bucket.toString((nodeObj) => {
-      return `[${nodeObj.key}, ${nodeObj.value} ]`;
-    }),
-  );
-});
-
-console.log(test.get('kite'));
-console.log(test.has('lion'));
-console.log(test.length());
-test.clear();
-
-console.log(test.hashTable);
-console.log(test.length());
-
+export {HashMap}
